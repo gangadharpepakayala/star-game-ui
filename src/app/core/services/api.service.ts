@@ -18,8 +18,10 @@ export class ApiService {
     // 2. Check if a global __STAR_GAME_API__ was defined
     if ((window as any).__STAR_GAME_API__) return (window as any).__STAR_GAME_API__.replace(/\/+$/, '');
 
-    // 3. Fallback: if localhost use 8787, else origin
-    return window.location.hostname !== 'localhost' ? window.location.origin : 'http://localhost:8787';
+    // 3. Fallback: if on localhost use 8787, else default to the live deployed Cloudflare Worker API
+    return window.location.hostname !== 'localhost' 
+      ? 'https://star-game-api.gangadharpepakayala22.workers.dev' 
+      : 'http://localhost:8787';
   }
 
   private baseUrl = this.resolveInitialBaseUrl();
