@@ -1,0 +1,86 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --jungle-bg: #EAF4DF;
+  --jungle-surface: #C5DDB0;
+  --jungle-green: #477A45;
+  --jungle-dark: #244D32;
+  --jungle-cream: #FFF5D9;
+  --jungle-gold: #D9A441;
+  --jungle-text: #263D2A;
+  --jungle-muted: #687B63;
+}
+
+body {
+  font-family: 'Outfit', sans-serif;
+  background-color: var(--jungle-bg);
+  color: var(--jungle-text);
+  overflow-x: hidden;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+/* Botanical subtle background pattern */
+.jungle-pattern {
+  background-color: #EAF4DF;
+  background-image: radial-gradient(#C5DDB0 1.2px, transparent 1.2px), radial-gradient(#C5DDB0 1.2px, #EAF4DF 1.2px);
+  background-size: 48px 48px;
+  background-position: 0 0, 24px 24px;
+}
+
+/* Card Drag and Drop Styles */
+.cdk-drag-preview {
+  box-sizing: border-box;
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.25), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  transform: rotate(4deg) scale(1.05);
+  opacity: 0.95;
+  z-index: 1000;
+}
+
+.cdk-drag-placeholder {
+  opacity: 0.3;
+  border: 2px dashed #477A45;
+  border-radius: 1rem;
+  background: rgba(197, 221, 176, 0.4);
+}
+
+.cdk-drag-animating {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+.card-hand-list.cdk-drop-list-dragging .card-item:not(.cdk-drag-placeholder) {
+  transition: transform 250ms cubic-bezier(0, 0, 0.2, 1);
+}
+
+/* Smooth pulse & shine animations */
+@keyframes junglePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.03);
+  }
+}
+
+.animate-jungle-pulse {
+  animation: junglePulse 2.5s infinite ease-in-out;
+}
+
+@keyframes turnGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(217, 164, 65, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 30px rgba(217, 164, 65, 0.85);
+  }
+}
+
+.active-turn-glow {
+  animation: turnGlow 1.8s infinite ease-in-out;
+}

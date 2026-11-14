@@ -1,0 +1,401 @@
+import { Component, inject } from '@angular/core';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
+import { GameService } from '../../core/services/game.service';
+import { ToastService } from '../../core/services/toast.service';
+import { GameCardComponent } from '../../shared/components/game-card/game-card.component';
+import { PhysicalCard } from '../../core/models/game.models';
+
+@Component({
+  selector: 'app-create-room',
+  standalone: true,
+  imports: [CommonModule, FormsModule, RouterLink, GameCardComponent],
+  template: `
+    <div class="min-h-screen jungle-pattern flex flex-col justify-center items-center px-4 py-8">
+      <div class="max-w-3xl w-full bg-jungle-cream/95 backdrop-blur-md rounded-3xl p-6 sm:p-8 border border-jungle-green/20 shadow-jungle">
+        
+        <!-- Header -->
+        <div class="text-center mb-6">
+          <div class="w-12 h-12 rounded-2xl bg-jungle-green text-jungle-cream mx-auto flex items-center justify-center font-black text-2xl shadow-md mb-3">
+            🏕️
+          </div>
+          <h2 class="text-2xl sm:text-3xl font-black text-jungle-dark">Create Jungle Arena</h2>
+          <p class="text-xs text-jungle-muted mt-1 max-w-md mx-auto">
+            Specify your player name, choose your unique card type, and configure the room.
+          </p>
+        </div>
+
+        <form (ngSubmit)="onCreate()" class="space-y-6">
+          
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            
+            <!-- LEFT COLUMN: Player & Card Selection -->
+            <div class="space-y-4 bg-jungle-surface/20 p-5 rounded-2xl border border-jungle-green/20">
+              <h3 class="text-sm font-black text-jungle-dark flex items-center space-x-1.5 border-b border-jungle-green/10 pb-2">
+                <span>1. Your Explorer & Card</span>
+              </h3>
+
+              <!-- Host Player Name -->
+              <div>
+                <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
+                  Your Player Name <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="hostPlayerName"
+                  [(ngModel)]="hostPlayerName" 
+                  required
+                  maxlength="20"
+                  placeholder="e.g. JungleChief"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-jungle-green/30 text-jungle-dark font-bold text-sm focus:outline-none focus:ring-2 focus:ring-jungle-green transition-all"
+                />
+              </div>
+
+              <!-- Host Card Name -->
+              <div>
+                <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
+                  Your Unique Card Name <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="cardName"
+                  [(ngModel)]="cardName" 
+                  required
+                  maxlength="20"
+                  placeholder="e.g. TIGER, DRAGON, JAGUAR"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-jungle-green/30 text-jungle-dark font-black text-sm uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-jungle-green transition-all"
+                />
+                <p class="text-[10px] text-jungle-muted mt-1">
+                  4 physical copies of this card will be generated for the deck!
+                </p>
+              </div>
+
+              <!-- Quick Presets -->
+              <div>
+                <span class="text-[10px] text-jungle-muted font-bold block mb-1.5">Quick Card Presets:</span>
+                <div class="flex flex-wrap gap-1.5">
+                  @for (preset of presets; track preset.name) {
+                    <button 
+                      type="button"
+                      (click)="selectPreset(preset.name)"
+                      class="px-2.5 py-1 rounded-lg text-xs font-bold border transition-all"
+                      [ngClass]="cardName.toUpperCase() === preset.name 
+                        ? 'bg-jungle-green text-white border-jungle-green shadow-xs' 
+                        : 'bg-white hover:bg-jungle-surface/50 border-jungle-green/20 text-jungle-dark'"
+                    >
+                      {{ preset.name }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Optional Card Image -->
+              <div>
+                <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
+                  Custom Card Artwork (Optional)
+                </label>
+                <div class="flex items-center space-x-2">
+                  <label class="flex-1 cursor-pointer py-2 px-3 rounded-xl border border-dashed border-jungle-green/40 hover:border-jungle-green bg-white text-center text-xs font-semibold text-jungle-muted hover:text-jungle-dark transition-all">
+                    <span>📷 Upload Artwork</span>
+                    <input 
+                      type="file" 
+                      accept="image/png, image/jpeg, image/webp" 
+                      (change)="onFileSelected($event)" 
+                      class="hidden" 
+                    />
+                  </label>
+                  @if (cardImageUrl) {
+                    <button 
+                      type="button" 
+                      (click)="cardImageUrl = undefined" 
+                      class="p-2 text-xs text-red-600 hover:bg-red-50 rounded-lg"
+                      title="Remove image"
+                    >
+                      ✕
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Live Card Preview -->
+              <div class="pt-2 flex flex-col items-center">
+                <span class="text-[10px] font-bold text-jungle-muted uppercase tracking-wider mb-2">Live Card Preview</span>
+                <app-game-card 
+                  [card]="getPreviewCard()" 
+                  size="sm"
+                />
+              </div>
+
+            </div>
+
+            <!-- RIGHT COLUMN: Room Settings -->
+            <div class="space-y-4 bg-jungle-surface/20 p-5 rounded-2xl border border-jungle-green/20">
+              <h3 class="text-sm font-black text-jungle-dark flex items-center space-x-1.5 border-b border-jungle-green/10 pb-2">
+                <span>2. Arena Settings</span>
+              </h3>
+
+              <!-- Room Name -->
+              <div>
+                <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
+                  Arena Name <span class="text-red-500">*</span>
+                </label>
+                <input 
+                  type="text" 
+                  name="roomName"
+                  [(ngModel)]="roomName" 
+                  required
+                  maxlength="30"
+                  placeholder="e.g. Tiger Sanctuary"
+                  class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-jungle-green/30 text-jungle-dark font-medium text-sm focus:outline-none focus:ring-2 focus:ring-jungle-green transition-all"
+                />
+              </div>
+
+              <!-- Max Players (2 to 8) -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs font-bold text-jungle-dark uppercase tracking-wide">
+                    Max Players
+                  </label>
+                  <span class="text-xs font-black text-jungle-green bg-white px-2 py-0.5 rounded-lg border border-jungle-green/20">
+                    {{ maxPlayers }} Players
+                  </span>
+                </div>
+                <input 
+                  type="range" 
+                  name="maxPlayers"
+                  [(ngModel)]="maxPlayers" 
+                  min="2" 
+                  max="8" 
+                  class="w-full accent-jungle-green cursor-pointer mt-1"
+                />
+                <div class="flex justify-between text-[10px] text-jungle-muted px-1 font-semibold">
+                  <span>2 min</span>
+                  <span>4 standard</span>
+                  <span>8 max</span>
+                </div>
+              </div>
+
+              <!-- Number of Rounds (Default 5) -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="text-xs font-bold text-jungle-dark uppercase tracking-wide">
+                    Total Rounds
+                  </label>
+                  <span class="text-xs font-black text-jungle-green bg-white px-2 py-0.5 rounded-lg border border-jungle-green/20">
+                    {{ totalRounds }} Rounds
+                  </span>
+                </div>
+                <div class="grid grid-cols-4 gap-1.5">
+                  @for (r of [3, 5, 7, 10]; track r) {
+                    <button 
+                      type="button"
+                      (click)="totalRounds = r"
+                      class="py-1.5 rounded-xl text-xs font-bold border transition-all"
+                      [ngClass]="totalRounds === r 
+                        ? 'bg-jungle-green text-white border-jungle-green shadow-sm' 
+                        : 'bg-white text-jungle-dark border-jungle-green/20 hover:bg-jungle-surface/50'"
+                    >
+                      {{ r }}
+                    </button>
+                  }
+                </div>
+              </div>
+
+              <!-- Room Visibility: Public / Private -->
+              <div>
+                <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
+                  Room Visibility
+                </label>
+                <div class="grid grid-cols-2 gap-2">
+                  <button 
+                    type="button"
+                    (click)="isPrivate = false"
+                    class="py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center space-x-1.5 transition-all"
+                    [ngClass]="!isPrivate 
+                      ? 'bg-jungle-green text-white border-jungle-green shadow-sm' 
+                      : 'bg-white text-jungle-dark border-jungle-green/20 hover:bg-jungle-surface/50'"
+                  >
+                    <span>🌍 Public</span>
+                  </button>
+
+                  <button 
+                    type="button"
+                    (click)="isPrivate = true"
+                    class="py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center space-x-1.5 transition-all"
+                    [ngClass]="isPrivate 
+                      ? 'bg-jungle-green text-white border-jungle-green shadow-sm' 
+                      : 'bg-white text-jungle-dark border-jungle-green/20 hover:bg-jungle-surface/50'"
+                  >
+                    <span>🔒 Private</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Password (if private) -->
+              @if (isPrivate) {
+                <div>
+                  <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
+                    Room Passcode
+                  </label>
+                  <input 
+                    type="password" 
+                    name="password"
+                    [(ngModel)]="password" 
+                    required
+                    placeholder="Enter secret passcode"
+                    class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-jungle-green/30 text-jungle-dark font-medium text-sm focus:outline-none focus:ring-2 focus:ring-jungle-green transition-all"
+                  />
+                </div>
+              }
+
+            </div>
+
+          </div>
+
+          <!-- Submit Button -->
+          <button 
+            type="submit"
+            [disabled]="isSubmitting || !roomName.trim() || !cardName.trim() || !hostPlayerName.trim()"
+            class="w-full py-4 rounded-2xl bg-jungle-green hover:bg-jungle-dark text-jungle-cream font-black text-base shadow-jungle hover:shadow-jungle-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            <span>{{ isSubmitting ? 'Creating Arena & Registering Card...' : 'Create Room & Enter Lobby →' }}</span>
+          </button>
+
+          <!-- Back to home -->
+          <div class="text-center">
+            <a routerLink="/" class="text-xs font-bold text-jungle-muted hover:text-jungle-dark transition-colors">
+              ← Cancel & Return Home
+            </a>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  `,
+})
+export class CreateRoomComponent {
+  private gameService = inject(GameService);
+  private toast = inject(ToastService);
+
+  public hostPlayerName = this.gameService.currentPlayer()?.playerName || 'JungleChief';
+  public cardName = 'TIGER';
+  public cardImageUrl: string | undefined = undefined;
+
+  public roomName = 'Jungle Arena';
+  public maxPlayers = 4;
+  public totalRounds = 5;
+  public isPrivate = false;
+  public password = '';
+  public isSubmitting = false;
+
+  public presets = [
+    { name: 'TIGER' },
+    { name: 'JAGUAR' },
+    { name: 'DRAGON' },
+    { name: 'PHOENIX' },
+    { name: 'PANTHER' },
+    { name: 'LOTUS' },
+  ];
+
+  public selectPreset(name: string): void {
+    this.cardName = name;
+  }
+
+  public getPreviewCard(): PhysicalCard {
+    return {
+      id: 'preview_1',
+      cardTypeId: 'crd_preview',
+      cardName: this.cardName.trim() || 'TIGER',
+      cardImageUrl: this.cardImageUrl,
+      currentOwnerId: 'preview_player',
+      position: 0,
+    };
+  }
+
+  public onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (!input.files || input.files.length === 0) return;
+
+    const file = input.files[0];
+    if (file.size > 5 * 1024 * 1024) {
+      this.toast.error('Image size must be under 5MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const MAX_DIM = 160;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height = Math.round((height * MAX_DIM) / width);
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width = Math.round((width * MAX_DIM) / height);
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          this.cardImageUrl = canvas.toDataURL('image/jpeg', 0.8);
+          this.toast.success('Artwork loaded & optimized!');
+        } else {
+          this.cardImageUrl = reader.result as string;
+          this.toast.success('Artwork loaded successfully!');
+        }
+      };
+      img.src = reader.result as string;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  public async onCreate(): Promise<void> {
+    if (!this.hostPlayerName.trim()) {
+      this.toast.error('Please enter your player name.');
+      return;
+    }
+
+    if (!this.cardName.trim()) {
+      this.toast.error('Please specify your unique card name.');
+      return;
+    }
+
+    if (!this.roomName.trim()) {
+      this.toast.error('Please enter an arena name.');
+      return;
+    }
+
+    if (this.isPrivate && !this.password.trim()) {
+      this.toast.error('Please enter a password for private room.');
+      return;
+    }
+
+    this.isSubmitting = true;
+    try {
+      await this.gameService.createRoom({
+        roomName: this.roomName.trim(),
+        maxPlayers: Number(this.maxPlayers),
+        totalRounds: Number(this.totalRounds),
+        roomVisibility: this.isPrivate ? 'PRIVATE' : 'PUBLIC',
+        password: this.isPrivate ? this.password.trim() : undefined,
+        playerName: this.hostPlayerName.trim(),
+        cardName: this.cardName.trim().toUpperCase(),
+        cardImageUrl: this.cardImageUrl,
+      });
+    } finally {
+      this.isSubmitting = false;
+    }
+  }
+}
