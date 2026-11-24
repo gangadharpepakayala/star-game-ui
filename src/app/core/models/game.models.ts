@@ -58,6 +58,7 @@ export interface PublicRoomState {
   currentTurnPlayerId: string | null;
   turnTimeRemaining: number;
   players: PublicPlayerInfo[];
+  turnOrder?: string[];
 }
 
 export interface LeaderboardEntry {

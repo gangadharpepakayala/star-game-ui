@@ -5,13 +5,11 @@ import { GameService } from '../../core/services/game.service';
 import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { PlayerAvatarComponent } from '../../shared/components/player-avatar/player-avatar.component';
-import { LeaderboardTableComponent } from '../../shared/components/leaderboard-table/leaderboard-table.component';
-import { LeaderboardEntry } from '../../core/models/game.models';
 
 @Component({
   selector: 'app-home',
   standalone: true,
-  imports: [CommonModule, RouterLink, PlayerAvatarComponent, LeaderboardTableComponent],
+  imports: [CommonModule, RouterLink, PlayerAvatarComponent],
   template: `
     <div class="min-h-screen jungle-pattern flex flex-col">
       <!-- Main Container -->
@@ -92,7 +90,7 @@ import { LeaderboardEntry } from '../../core/models/game.models';
         <section class="flex flex-col space-y-4">
           <div class="flex items-center justify-between">
             <h3 class="text-xl font-black text-jungle-dark flex items-center space-x-2">
-              <span>🏕️ Active Public Rooms</span>
+              <span>⛺ Active Public Rooms</span>
               <span class="text-xs font-bold px-2.5 py-0.5 rounded-full bg-jungle-green/15 text-jungle-green">
                 {{ publicRooms().length }} open
               </span>
@@ -138,18 +136,6 @@ import { LeaderboardEntry } from '../../core/models/game.models';
           </div>
         </section>
 
-        <!-- Global Leaderboard Preview -->
-        <section class="flex flex-col space-y-4">
-          <div class="flex items-center justify-between">
-            <h3 class="text-xl font-black text-jungle-dark">🏆 Global Leaderboard</h3>
-            <a routerLink="/leaderboard" class="text-xs font-bold text-jungle-green hover:underline">
-              View All Rankings →
-            </a>
-          </div>
-
-          <app-leaderboard-table [entries]="topPlayers()" />
-        </section>
-
       </main>
     </div>
   `,
@@ -161,12 +147,10 @@ export class HomeComponent implements OnInit {
 
   public stats = signal<any>(null);
   public publicRooms = signal<any[]>([]);
-  public topPlayers = signal<LeaderboardEntry[]>([]);
 
   public async ngOnInit(): Promise<void> {
     await this.loadStats();
     await this.loadPublicRooms();
-    await this.loadLeaderboard();
   }
 
   public async loadStats(): Promise<void> {
@@ -183,13 +167,6 @@ export class HomeComponent implements OnInit {
     try {
       const res = await this.api.getPublicRooms();
       this.publicRooms.set(res.rooms || []);
-    } catch {}
-  }
-
-  public async loadLeaderboard(): Promise<void> {
-    try {
-      const res = await this.api.getGlobalLeaderboard();
-      this.topPlayers.set((res.leaderboard || []).slice(0, 5));
     } catch {}
   }
 

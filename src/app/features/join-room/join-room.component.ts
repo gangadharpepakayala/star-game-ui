@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -22,7 +22,7 @@ import { ToastService } from '../../core/services/toast.service';
           <p class="text-xs text-jungle-muted mt-1">Enter a 8-character Room ID from your friend</p>
         </div>
 
-        <form (ngSubmit)="onJoin()" class="space-y-5">
+        <form (ngSubmit)="onJoin()" class="space-y-4">
           <!-- Player Name Input -->
           <div>
             <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1.5">
@@ -73,13 +73,24 @@ import { ToastService } from '../../core/services/toast.service';
           <button 
             type="submit"
             [disabled]="isJoining || !roomCode.trim()"
-            class="w-full py-3.5 rounded-2xl bg-jungle-green hover:bg-jungle-dark text-jungle-cream font-black text-sm shadow-jungle hover:shadow-jungle-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            class="w-full py-3.5 rounded-2xl bg-jungle-green hover:bg-jungle-dark text-jungle-cream font-black text-sm shadow-jungle hover:shadow-jungle-lg hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
           >
             <span>{{ isJoining ? 'Verifying Room...' : 'Enter Arena →' }}</span>
           </button>
 
-          <!-- Back to home -->
+          <!-- Rejoin existing room option (underlined small text like forgot password) -->
           <div class="text-center pt-2">
+            <button 
+              type="button" 
+              (click)="onRejoinRecentRoom()"
+              class="text-xs font-semibold text-jungle-green hover:text-jungle-dark underline cursor-pointer bg-transparent border-none p-0 tracking-wide"
+            >
+              Rejoin existing room?
+            </button>
+          </div>
+
+          <!-- Back to home -->
+          <div class="text-center pt-1">
             <a routerLink="/" class="text-xs font-bold text-jungle-muted hover:text-jungle-dark transition-colors">
               ← Cancel & Return Home
             </a>
@@ -98,11 +109,36 @@ export class JoinRoomComponent {
   public roomCode = '';
   public password = '';
   public isJoining = false;
+  public lastRoomCode = signal<string>('');
+
+  constructor() {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('star_game_last_room');
+      if (saved) {
+        this.lastRoomCode.set(saved);
+      }
+    }
+  }
+
+  public onRejoinRecentRoom(): void {
+    const saved = this.lastRoomCode() || (typeof window !== 'undefined' ? localStorage.getItem('star_game_last_room') : '');
+    if (saved) {
+      this.roomCode = saved;
+      this.toast.info(`Filled previous room code: ${saved}`);
+    } else {
+      this.toast.info('No recent room code found. Please enter your room code above.');
+    }
+  }
 
   public async onJoin(): Promise<void> {
     if (!this.roomCode.trim()) {
       this.toast.error('Please enter a room code.');
       return;
+    }
+
+    const cleanCode = this.roomCode.trim().toUpperCase();
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('star_game_last_room', cleanCode);
     }
 
     this.isJoining = true;
@@ -111,7 +147,7 @@ export class JoinRoomComponent {
         await this.gameService.updateProfile(this.playerName.trim());
       }
 
-      await this.gameService.joinRoom(this.roomCode.trim().toUpperCase(), this.password ? this.password.trim() : undefined);
+      await this.gameService.joinRoom(cleanCode, this.password ? this.password.trim() : undefined);
     } finally {
       this.isJoining = false;
     }

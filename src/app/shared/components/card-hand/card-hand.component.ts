@@ -9,43 +9,38 @@ import { GameCardComponent } from '../game-card/game-card.component';
   standalone: true,
   imports: [CommonModule, DragDropModule, GameCardComponent],
   template: `
-    <div class="w-full flex flex-col items-center select-none py-2">
+    <div class="w-full flex flex-col items-center select-none py-1 sm:py-2">
       <!-- Instruction banner for turn / dragging -->
-      <div class="mb-2 text-xs font-semibold tracking-wide text-jungle-muted flex items-center space-x-2">
+      <div class="mb-1 text-[11px] sm:text-xs font-semibold tracking-wide text-jungle-muted flex items-center space-x-1.5 text-center">
         <span>🖐️ Your Hand ({{ cards.length }}/4)</span>
-        <span class="text-jungle-green/60">• Drag cards to reorder or drop onto table to exchange •</span>
+        <span class="hidden sm:inline text-jungle-green/60">• Drag cards to reorder or drop onto table to exchange •</span>
       </div>
 
-      <!-- Drag & Drop Card Row -->
+      <!-- Drag & Drop Card Row (Responsively fits 4 cards on all screens) -->
       <div 
         cdkDropList 
         id="player-hand-list"
         [cdkDropListData]="cards"
         cdkDropListOrientation="horizontal"
         (cdkDropListDropped)="onDrop($event)"
-        class="card-hand-list flex items-center justify-center space-x-2 sm:space-x-4 px-4 py-2 min-h-[180px] sm:min-h-[220px]"
+        class="card-hand-list flex items-center justify-center space-x-1.5 xs:space-x-2 sm:space-x-4 px-1 sm:px-4 py-1 sm:py-2 min-h-[115px] sm:min-h-[180px] w-full max-w-full overflow-x-hidden"
       >
         @for (card of cards; track card.id) {
           <div 
             cdkDrag 
             [cdkDragData]="card"
-            class="card-item transition-transform"
+            class="card-item transition-transform flex-shrink-0"
           >
             <app-game-card 
               [card]="card"
               [isSelected]="selectedCardId === card.id"
               (cardSelected)="onCardSelected(card.id)"
             />
-
-            <!-- Drag Handle Hint -->
-            <div class="text-center text-[10px] text-jungle-muted mt-1 opacity-0 hover:opacity-100 transition-opacity">
-              ⋮⋮ drag
-            </div>
           </div>
         }
 
         @if (cards.length === 0) {
-          <div class="text-sm text-jungle-muted italic py-8">
+          <div class="text-xs sm:text-sm text-jungle-muted italic py-4">
             Cards will appear once the round starts...
           </div>
         }

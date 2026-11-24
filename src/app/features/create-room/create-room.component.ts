@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -6,6 +6,7 @@ import { GameService } from '../../core/services/game.service';
 import { ToastService } from '../../core/services/toast.service';
 import { GameCardComponent } from '../../shared/components/game-card/game-card.component';
 import { PhysicalCard } from '../../core/models/game.models';
+import { PREDEFINED_CARD_SYMBOLS, getRandomCardSymbol, CardSymbol } from '../../core/models/card-symbols';
 
 @Component({
   selector: 'app-create-room',
@@ -18,7 +19,7 @@ import { PhysicalCard } from '../../core/models/game.models';
         <!-- Header -->
         <div class="text-center mb-6">
           <div class="w-12 h-12 rounded-2xl bg-jungle-green text-jungle-cream mx-auto flex items-center justify-center font-black text-2xl shadow-md mb-3">
-            🏕️
+            ⛺
           </div>
           <h2 class="text-2xl sm:text-3xl font-black text-jungle-dark">Create Jungle Arena</h2>
           <p class="text-xs text-jungle-muted mt-1 max-w-md mx-auto">
@@ -54,16 +55,25 @@ import { PhysicalCard } from '../../core/models/game.models';
 
               <!-- Host Card Name -->
               <div>
-                <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
-                  Your Unique Card Name <span class="text-red-500">*</span>
-                </label>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide">
+                    Your Unique Card Name <span class="text-red-500">*</span>
+                  </label>
+                  <button 
+                    type="button" 
+                    (click)="pickRandomSymbol()"
+                    class="text-[11px] font-bold text-jungle-green hover:underline cursor-pointer"
+                  >
+                    🎲 Random
+                  </button>
+                </div>
                 <input 
                   type="text" 
                   name="cardName"
                   [(ngModel)]="cardName" 
                   required
                   maxlength="20"
-                  placeholder="e.g. TIGER, DRAGON, JAGUAR"
+                  placeholder="e.g. TIGER, FALCON, DRAGON"
                   class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-jungle-green/30 text-jungle-dark font-black text-sm uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-jungle-green transition-all"
                 />
                 <p class="text-[10px] text-jungle-muted mt-1">
@@ -71,20 +81,21 @@ import { PhysicalCard } from '../../core/models/game.models';
                 </p>
               </div>
 
-              <!-- Quick Presets -->
+              <!-- Quick Presets from 100+ Predefined Symbols -->
               <div>
-                <span class="text-[10px] text-jungle-muted font-bold block mb-1.5">Quick Card Presets:</span>
-                <div class="flex flex-wrap gap-1.5">
-                  @for (preset of presets; track preset.name) {
+                <span class="text-[10px] text-jungle-muted font-bold block mb-1.5">Predefined Card Symbols (100+ available):</span>
+                <div class="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto p-1 bg-white/70 rounded-xl border border-jungle-green/15">
+                  @for (sym of popularSymbols; track sym.name) {
                     <button 
                       type="button"
-                      (click)="selectPreset(preset.name)"
-                      class="px-2.5 py-1 rounded-lg text-xs font-bold border transition-all"
-                      [ngClass]="cardName.toUpperCase() === preset.name 
+                      (click)="selectPreset(sym.name)"
+                      class="px-2 py-0.5 rounded-lg text-xs font-bold border transition-all cursor-pointer flex items-center space-x-1"
+                      [ngClass]="cardName.toUpperCase() === sym.name 
                         ? 'bg-jungle-green text-white border-jungle-green shadow-xs' 
-                        : 'bg-white hover:bg-jungle-surface/50 border-jungle-green/20 text-jungle-dark'"
+                        : 'bg-white hover:bg-jungle-surface/60 border-jungle-green/20 text-jungle-dark'"
                     >
-                      {{ preset.name }}
+                      <span>{{ sym.emoji }}</span>
+                      <span>{{ sym.name }}</span>
                     </button>
                   }
                 </div>
@@ -93,11 +104,11 @@ import { PhysicalCard } from '../../core/models/game.models';
               <!-- Optional Card Image -->
               <div>
                 <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
-                  Custom Card Artwork (Optional)
+                  Custom Artwork (Optional)
                 </label>
                 <div class="flex items-center space-x-2">
                   <label class="flex-1 cursor-pointer py-2 px-3 rounded-xl border border-dashed border-jungle-green/40 hover:border-jungle-green bg-white text-center text-xs font-semibold text-jungle-muted hover:text-jungle-dark transition-all">
-                    <span>📷 Upload Artwork</span>
+                    <span>📁 Upload Image</span>
                     <input 
                       type="file" 
                       accept="image/png, image/jpeg, image/webp" 
@@ -105,12 +116,13 @@ import { PhysicalCard } from '../../core/models/game.models';
                       class="hidden" 
                     />
                   </label>
+
                   @if (cardImageUrl) {
                     <button 
                       type="button" 
                       (click)="cardImageUrl = undefined" 
-                      class="p-2 text-xs text-red-600 hover:bg-red-50 rounded-lg"
-                      title="Remove image"
+                      class="p-2 text-xs text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
+                      title="Remove Image"
                     >
                       ✕
                     </button>
@@ -118,27 +130,18 @@ import { PhysicalCard } from '../../core/models/game.models';
                 </div>
               </div>
 
-              <!-- Live Card Preview -->
-              <div class="pt-2 flex flex-col items-center">
-                <span class="text-[10px] font-bold text-jungle-muted uppercase tracking-wider mb-2">Live Card Preview</span>
-                <app-game-card 
-                  [card]="getPreviewCard()" 
-                  size="sm"
-                />
-              </div>
-
             </div>
 
-            <!-- RIGHT COLUMN: Room Settings -->
+            <!-- RIGHT COLUMN: Room Configuration & Preview -->
             <div class="space-y-4 bg-jungle-surface/20 p-5 rounded-2xl border border-jungle-green/20">
               <h3 class="text-sm font-black text-jungle-dark flex items-center space-x-1.5 border-b border-jungle-green/10 pb-2">
-                <span>2. Arena Settings</span>
+                <span>2. Arena Settings & Preview</span>
               </h3>
 
-              <!-- Room Name -->
+              <!-- Arena Name -->
               <div>
                 <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
-                  Arena Name <span class="text-red-500">*</span>
+                  Arena Room Name
                 </label>
                 <input 
                   type="text" 
@@ -146,104 +149,72 @@ import { PhysicalCard } from '../../core/models/game.models';
                   [(ngModel)]="roomName" 
                   required
                   maxlength="30"
-                  placeholder="e.g. Tiger Sanctuary"
                   class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-jungle-green/30 text-jungle-dark font-medium text-sm focus:outline-none focus:ring-2 focus:ring-jungle-green transition-all"
                 />
               </div>
 
-              <!-- Max Players (2 to 8) -->
-              <div>
-                <div class="flex items-center justify-between mb-1">
-                  <label class="text-xs font-bold text-jungle-dark uppercase tracking-wide">
-                    Max Players
-                  </label>
-                  <span class="text-xs font-black text-jungle-green bg-white px-2 py-0.5 rounded-lg border border-jungle-green/20">
-                    {{ maxPlayers }} Players
-                  </span>
-                </div>
-                <input 
-                  type="range" 
-                  name="maxPlayers"
-                  [(ngModel)]="maxPlayers" 
-                  min="2" 
-                  max="8" 
-                  class="w-full accent-jungle-green cursor-pointer mt-1"
-                />
-                <div class="flex justify-between text-[10px] text-jungle-muted px-1 font-semibold">
-                  <span>2 min</span>
-                  <span>4 standard</span>
-                  <span>8 max</span>
-                </div>
-              </div>
-
-              <!-- Number of Rounds (Default 5) -->
-              <div>
-                <div class="flex items-center justify-between mb-1">
-                  <label class="text-xs font-bold text-jungle-dark uppercase tracking-wide">
-                    Total Rounds
-                  </label>
-                  <span class="text-xs font-black text-jungle-green bg-white px-2 py-0.5 rounded-lg border border-jungle-green/20">
-                    {{ totalRounds }} Rounds
-                  </span>
-                </div>
-                <div class="grid grid-cols-4 gap-1.5">
-                  @for (r of [3, 5, 7, 10]; track r) {
-                    <button 
-                      type="button"
-                      (click)="totalRounds = r"
-                      class="py-1.5 rounded-xl text-xs font-bold border transition-all"
-                      [ngClass]="totalRounds === r 
-                        ? 'bg-jungle-green text-white border-jungle-green shadow-sm' 
-                        : 'bg-white text-jungle-dark border-jungle-green/20 hover:bg-jungle-surface/50'"
-                    >
-                      {{ r }}
-                    </button>
-                  }
-                </div>
-              </div>
-
-              <!-- Room Visibility: Public / Private -->
-              <div>
-                <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
-                  Room Visibility
-                </label>
-                <div class="grid grid-cols-2 gap-2">
-                  <button 
-                    type="button"
-                    (click)="isPrivate = false"
-                    class="py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center space-x-1.5 transition-all"
-                    [ngClass]="!isPrivate 
-                      ? 'bg-jungle-green text-white border-jungle-green shadow-sm' 
-                      : 'bg-white text-jungle-dark border-jungle-green/20 hover:bg-jungle-surface/50'"
-                  >
-                    <span>🌍 Public</span>
-                  </button>
-
-                  <button 
-                    type="button"
-                    (click)="isPrivate = true"
-                    class="py-2 px-3 rounded-xl border text-xs font-bold flex items-center justify-center space-x-1.5 transition-all"
-                    [ngClass]="isPrivate 
-                      ? 'bg-jungle-green text-white border-jungle-green shadow-sm' 
-                      : 'bg-white text-jungle-dark border-jungle-green/20 hover:bg-jungle-surface/50'"
-                  >
-                    <span>🔒 Private</span>
-                  </button>
-                </div>
-              </div>
-
-              <!-- Password (if private) -->
-              @if (isPrivate) {
+              <!-- Max Players & Total Rounds -->
+              <div class="grid grid-cols-2 gap-3">
                 <div>
                   <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
-                    Room Passcode
+                    Max Players
                   </label>
+                  <select 
+                    name="maxPlayers"
+                    [(ngModel)]="maxPlayers"
+                    class="w-full px-3 py-2.5 rounded-xl bg-white border border-jungle-green/30 text-jungle-dark font-bold text-sm focus:outline-none focus:ring-2 focus:ring-jungle-green"
+                  >
+                    <option [value]="2">2 Players</option>
+                    <option [value]="3">3 Players</option>
+                    <option [value]="4">4 Players</option>
+                    <option [value]="5">5 Players</option>
+                    <option [value]="6">6 Players</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
+                    Rounds
+                  </label>
+                  <select 
+                    name="totalRounds"
+                    [(ngModel)]="totalRounds"
+                    class="w-full px-3 py-2.5 rounded-xl bg-white border border-jungle-green/30 text-jungle-dark font-bold text-sm focus:outline-none focus:ring-2 focus:ring-jungle-green"
+                  >
+                    <option [value]="1">1 Round</option>
+                    <option [value]="3">3 Rounds</option>
+                    <option [value]="5">5 Rounds</option>
+                    <option [value]="7">7 Rounds</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Live Card Preview -->
+              <div class="flex flex-col items-center justify-center p-3 bg-white/60 rounded-xl border border-jungle-green/10">
+                <span class="text-[10px] font-bold text-jungle-muted uppercase tracking-wider mb-2">Live Card Preview</span>
+                <app-game-card [card]="getPreviewCard()" size="sm" />
+              </div>
+
+              <!-- Visibility / Password -->
+              <div class="pt-1">
+                <label class="flex items-center space-x-2 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    name="isPrivate"
+                    [(ngModel)]="isPrivate"
+                    class="rounded text-jungle-green focus:ring-jungle-green h-4 w-4" 
+                  />
+                  <span class="text-xs font-bold text-jungle-dark">Require Password (Private Room)</span>
+                </label>
+              </div>
+
+              @if (isPrivate) {
+                <div>
                   <input 
                     type="password" 
                     name="password"
                     [(ngModel)]="password" 
-                    required
-                    placeholder="Enter secret passcode"
+                    placeholder="Enter private passcode"
                     class="w-full px-3.5 py-2.5 rounded-xl bg-white border border-jungle-green/30 text-jungle-dark font-medium text-sm focus:outline-none focus:ring-2 focus:ring-jungle-green transition-all"
                   />
                 </div>
@@ -257,7 +228,7 @@ import { PhysicalCard } from '../../core/models/game.models';
           <button 
             type="submit"
             [disabled]="isSubmitting || !roomName.trim() || !cardName.trim() || !hostPlayerName.trim()"
-            class="w-full py-4 rounded-2xl bg-jungle-green hover:bg-jungle-dark text-jungle-cream font-black text-base shadow-jungle hover:shadow-jungle-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+            class="w-full py-4 rounded-2xl bg-jungle-green hover:bg-jungle-dark text-jungle-cream font-black text-base shadow-jungle hover:shadow-jungle-lg hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2 cursor-pointer"
           >
             <span>{{ isSubmitting ? 'Creating Arena & Registering Card...' : 'Create Room & Enter Lobby →' }}</span>
           </button>
@@ -274,7 +245,7 @@ import { PhysicalCard } from '../../core/models/game.models';
     </div>
   `,
 })
-export class CreateRoomComponent {
+export class CreateRoomComponent implements OnInit {
   private gameService = inject(GameService);
   private toast = inject(ToastService);
 
@@ -289,14 +260,16 @@ export class CreateRoomComponent {
   public password = '';
   public isSubmitting = false;
 
-  public presets = [
-    { name: 'TIGER' },
-    { name: 'JAGUAR' },
-    { name: 'DRAGON' },
-    { name: 'PHOENIX' },
-    { name: 'PANTHER' },
-    { name: 'LOTUS' },
-  ];
+  public popularSymbols: CardSymbol[] = PREDEFINED_CARD_SYMBOLS.slice(0, 30);
+
+  public ngOnInit(): void {
+    this.pickRandomSymbol();
+  }
+
+  public pickRandomSymbol(): void {
+    const sym = getRandomCardSymbol([this.cardName]);
+    this.cardName = sym.name;
+  }
 
   public selectPreset(name: string): void {
     this.cardName = name;

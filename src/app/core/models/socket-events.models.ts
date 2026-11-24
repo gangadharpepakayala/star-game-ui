@@ -8,6 +8,7 @@ export type ClientEventType =
   | 'exchange_card'
   | 'declare_winner'
   | 'request_next_round'
+  | 'end_game'
   | 'leave_room'
   | 'heartbeat';
 
@@ -25,6 +26,7 @@ export type ServerEventType =
   | 'winner_validated'
   | 'invalid_winner_claim'
   | 'round_completed'
+  | 'round_countdown_started'
   | 'leaderboard_updated'
   | 'next_round_started'
   | 'game_completed'
@@ -36,6 +38,11 @@ export interface BaseSocketMessage<T extends string, P = any> {
   event: T;
   roomId: string;
   payload: P;
+}
+
+export interface RoundCountdownStartedPayload {
+  countdownSeconds: number;
+  nextRoundNumber: number;
 }
 
 export interface CardExchangedPayload {
@@ -66,4 +73,5 @@ export interface GameCompletedPayload {
   championPlayerName: string;
   championAvatar: string;
   finalLeaderboard: LeaderboardEntry[];
+  endedByHost?: boolean;
 }

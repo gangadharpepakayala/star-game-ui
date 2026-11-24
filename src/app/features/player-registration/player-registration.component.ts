@@ -7,6 +7,7 @@ import { ApiService } from '../../core/services/api.service';
 import { ToastService } from '../../core/services/toast.service';
 import { GameCardComponent } from '../../shared/components/game-card/game-card.component';
 import { PhysicalCard } from '../../core/models/game.models';
+import { PREDEFINED_CARD_SYMBOLS, getRandomCardSymbol, CardSymbol } from '../../core/models/card-symbols';
 
 @Component({
   selector: 'app-player-registration',
@@ -49,21 +50,50 @@ import { PhysicalCard } from '../../core/models/game.models';
 
             <!-- Card Name -->
             <div>
-              <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide mb-1">
-                Unique Card Name
-              </label>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-bold text-jungle-dark uppercase tracking-wide">
+                  Unique Card Name
+                </label>
+                <button 
+                  type="button" 
+                  (click)="pickRandomSymbol()"
+                  class="text-[11px] font-bold text-jungle-green hover:underline cursor-pointer"
+                >
+                  🎲 Pick Another
+                </button>
+              </div>
               <input 
                 type="text" 
                 name="cardName"
                 [(ngModel)]="cardName" 
                 required
                 maxlength="20"
-                placeholder="e.g. DRAGON, PANTHER, LOTUS"
+                placeholder="e.g. FALCON, PANTHER, LOTUS"
                 class="w-full px-3.5 py-2.5 rounded-xl bg-jungle-surface/30 border border-jungle-green/30 text-jungle-dark font-black text-sm uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-jungle-green focus:bg-white"
               />
               <p class="text-[10px] text-jungle-muted mt-1">
                 Must be unique among players in this room.
               </p>
+            </div>
+
+            <!-- Quick Presets -->
+            <div>
+              <span class="text-[10px] text-jungle-muted font-bold block mb-1">Choose from Predefined Symbols:</span>
+              <div class="flex flex-wrap gap-1 max-h-24 overflow-y-auto p-1 bg-jungle-surface/20 rounded-xl border border-jungle-green/15">
+                @for (preset of popularPresets; track preset.name) {
+                  <button 
+                    type="button"
+                    (click)="cardName = preset.name"
+                    class="px-2 py-0.5 rounded-lg border text-[10px] font-bold transition-all cursor-pointer flex items-center space-x-1"
+                    [ngClass]="cardName.toUpperCase() === preset.name 
+                      ? 'bg-jungle-green text-white border-jungle-green shadow-xs' 
+                      : 'bg-white hover:bg-jungle-surface border-jungle-green/20 text-jungle-dark'"
+                  >
+                    <span>{{ preset.emoji }}</span>
+                    <span>{{ preset.name }}</span>
+                  </button>
+                }
+              </div>
             </div>
 
             <!-- Card Image Upload / Preset -->
@@ -75,7 +105,7 @@ import { PhysicalCard } from '../../core/models/game.models';
               <!-- File Upload Input -->
               <div class="flex items-center space-x-2">
                 <label class="flex-1 cursor-pointer py-2 px-3 rounded-xl border border-dashed border-jungle-green/40 hover:border-jungle-green bg-jungle-surface/20 text-center text-xs font-semibold text-jungle-muted hover:text-jungle-dark transition-all">
-                  <span>📁 Upload Image (PNG/JPG)</span>
+                  <span>📁 Upload Image</span>
                   <input 
                     type="file" 
                     accept="image/png, image/jpeg, image/webp" 
@@ -88,24 +118,10 @@ import { PhysicalCard } from '../../core/models/game.models';
                   <button 
                     type="button" 
                     (click)="cardImageUrl = undefined" 
-                    class="p-2 text-xs text-red-600 hover:bg-red-50 rounded-lg"
+                    class="p-2 text-xs text-red-600 hover:bg-red-50 rounded-lg cursor-pointer"
                     title="Remove Image"
                   >
                     ✕
-                  </button>
-                }
-              </div>
-
-              <!-- Quick Presets -->
-              <div class="mt-2 flex items-center space-x-2">
-                <span class="text-[10px] text-jungle-muted font-bold">Presets:</span>
-                @for (preset of presets; track preset.name) {
-                  <button 
-                    type="button"
-                    (click)="cardName = preset.name; cardImageUrl = preset.url"
-                    class="px-2 py-0.5 rounded-lg bg-jungle-surface/40 hover:bg-jungle-surface border border-jungle-green/20 text-[10px] font-bold text-jungle-dark"
-                  >
-                    {{ preset.name }}
                   </button>
                 }
               </div>
@@ -115,7 +131,7 @@ import { PhysicalCard } from '../../core/models/game.models';
             <button 
               type="submit"
               [disabled]="!cardName.trim() || isSubmitting"
-              class="w-full py-3 rounded-2xl bg-jungle-green hover:bg-jungle-dark text-jungle-cream font-black text-sm shadow-jungle hover:shadow-jungle-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 flex items-center justify-center space-x-2"
+              class="w-full py-3 rounded-2xl bg-jungle-green hover:bg-jungle-dark text-jungle-cream font-black text-sm shadow-jungle hover:shadow-jungle-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed mt-2 flex items-center justify-center space-x-2 cursor-pointer"
             >
               <span>{{ isSubmitting ? 'Registering...' : 'Lock In Card & Ready ✓' }}</span>
             </button>
@@ -151,17 +167,12 @@ export class PlayerRegistrationComponent implements OnInit {
   private toast = inject(ToastService);
 
   public playerName = '';
-  public cardName = 'STAR';
+  public cardName = '';
   public cardImageUrl: string | undefined = undefined;
   public isSubmitting = false;
   public roomId = '';
 
-  public presets = [
-    { name: 'DRAGON', url: undefined },
-    { name: 'PHOENIX', url: undefined },
-    { name: 'PANTHER', url: undefined },
-    { name: 'TIGER', url: undefined },
-  ];
+  public popularPresets: CardSymbol[] = PREDEFINED_CARD_SYMBOLS.slice(0, 32);
 
   public get previewCard(): PhysicalCard {
     return {
@@ -184,6 +195,21 @@ export class PlayerRegistrationComponent implements OnInit {
     if (this.roomId) {
       this.gameService.connectToRoom(this.roomId);
     }
+
+    this.pickRandomSymbol();
+  }
+
+  public pickRandomSymbol(): void {
+    const existing = (this.gameService.currentRoom()?.players || [])
+      .map(p => p.submittedCardName)
+      .filter(Boolean) as string[];
+
+    if (this.cardName) {
+      existing.push(this.cardName);
+    }
+
+    const sym = getRandomCardSymbol(existing);
+    this.cardName = sym.name;
   }
 
   public onFileSelected(event: any): void {

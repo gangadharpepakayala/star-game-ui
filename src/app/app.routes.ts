@@ -18,7 +18,6 @@ export const routes: Routes = [
   { path: 'lobby/:roomId', component: WaitingLobbyComponent },
   { path: 'game/:roomId', component: GameBoardComponent },
   { path: 'champion/:roomId', component: FinalChampionComponent },
-  { path: 'leaderboard', component: LeaderboardComponent },
   { path: 'profile', component: ProfileComponent },
   { path: 'settings', component: SettingsComponent },
   { path: '**', redirectTo: '' },

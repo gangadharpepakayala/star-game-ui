@@ -47,6 +47,7 @@ export class GameService {
   public isLeaderboardModalOpen = signal<boolean>(false);
   public isChampionModalOpen = signal<boolean>(false);
   public isLoading = signal<boolean>(false);
+  public roundCountdown = signal<number>(0);
 
   // Computed State
   public isHost = computed(() => {
@@ -75,6 +76,33 @@ export class GameService {
     const player = this.currentPlayer();
     if (!room || !player) return [];
     return room.players.filter(p => p.id !== player.id);
+  });
+
+  // Opponents ordered in clockwise rotation starting from the viewer's position
+  public orderedOpponents = computed(() => {
+    const room = this.currentRoom();
+    const player = this.currentPlayer();
+    if (!room || !player) return [];
+
+    const order = room.turnOrder && room.turnOrder.length > 0
+      ? room.turnOrder
+      : room.players.map(p => p.id);
+
+    const myIndex = order.indexOf(player.id);
+    if (myIndex === -1) {
+      return room.players.filter(p => p.id !== player.id);
+    }
+
+    const result: PublicPlayerInfo[] = [];
+    for (let i = 1; i < order.length; i++) {
+      const targetId = order[(myIndex + i) % order.length];
+      if (targetId === player.id) continue;
+      const found = room.players.find(p => p.id === targetId);
+      if (found) {
+        result.push(found);
+      }
+    }
+    return result;
   });
 
   public canDeclareWinner = computed(() => {
@@ -288,6 +316,12 @@ export class GameService {
     this.ws.send('request_next_round', room.roomId, {});
   }
 
+  public endGame(): void {
+    const room = this.currentRoom();
+    if (!room) return;
+    this.ws.send('end_game', room.roomId, {});
+  }
+
   public leaveRoom(): void {
     const room = this.currentRoom();
     if (room) {
@@ -318,6 +352,8 @@ export class GameService {
         this.router.navigate(['/game', msg.payload.room.roomId]);
       } else if (status === 'WAITING' && currentUrl.includes('/game')) {
         this.router.navigate(['/lobby', msg.payload.room.roomId]);
+      } else if (status === 'COMPLETED' && currentUrl.includes('/game')) {
+        this.router.navigate(['/champion', msg.payload.room.roomId], { replaceUrl: true });
       }
     });
 
@@ -365,24 +401,43 @@ export class GameService {
       this.isWinnerModalOpen.set(true);
     });
 
+    // Round countdown started (3s timer before round starts for all players)
+    this.ws.onEvent('round_countdown_started').subscribe((msg) => {
+      this.isWinnerModalOpen.set(false);
+      const seconds = msg.payload.countdownSeconds || 3;
+      this.roundCountdown.set(seconds);
+      const timer = setInterval(() => {
+        const curr = this.roundCountdown();
+        if (curr <= 1) {
+          clearInterval(timer);
+          this.roundCountdown.set(0);
+        } else {
+          this.roundCountdown.set(curr - 1);
+        }
+      }, 1000);
+    });
+
     // Next round started -> Automatically close winner celebration modal for ALL players!
     this.ws.onEvent('next_round_started').subscribe((msg) => {
+      this.roundCountdown.set(0);
       this.isWinnerModalOpen.set(false);
       this.toast.info(`Round ${msg.payload.roundNumber} has started! Deal in progress...`);
     });
 
     // Game started
     this.ws.onEvent('game_started').subscribe((msg) => {
+      this.roundCountdown.set(0);
       this.isWinnerModalOpen.set(false);
     });
 
     // Game completed (Final Champion)
     this.ws.onEvent('game_completed').subscribe((msg) => {
+      this.roundCountdown.set(0);
       this.gameCompleted.set(msg.payload);
       this.isWinnerModalOpen.set(false);
       this.isChampionModalOpen.set(true);
       this.audio.playVictory();
-      this.router.navigate(['/champion', this.currentRoom()?.roomId]);
+      this.router.navigate(['/champion', this.currentRoom()?.roomId], { replaceUrl: true });
     });
 
     // Server error
