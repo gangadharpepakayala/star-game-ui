@@ -215,6 +215,16 @@ export class WaitingLobbyComponent implements OnInit {
 
   public ngOnInit(): void {
     const roomId = this.route.snapshot.paramMap.get('roomId');
+    const room = this.gameService.currentRoom();
+    if (room?.roomStatus === 'COMPLETED' && roomId) {
+      this.router.navigate(['/champion', roomId], { replaceUrl: true });
+      return;
+    }
+    if (room?.roomStatus === 'IN_PROGRESS' && roomId) {
+      this.router.navigate(['/game', roomId], { replaceUrl: true });
+      return;
+    }
+
     if (roomId && (!this.gameService.currentRoom() || this.gameService.currentRoom()?.roomId !== roomId)) {
       this.gameService.connectToRoom(roomId);
     }

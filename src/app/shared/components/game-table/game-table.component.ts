@@ -1,122 +1,109 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { DragDropModule, CdkDragDrop } from '@angular/cdk/drag-drop';
-import { PublicPlayerInfo, PhysicalCard } from '../../../core/models/game.models';
-import { PlayerPanelComponent } from '../player-panel/player-panel.component';
+import { PhysicalCard } from '../../../core/models/game.models';
 
 @Component({
   selector: 'app-game-table',
   standalone: true,
-  imports: [CommonModule, DragDropModule, PlayerPanelComponent],
+  imports: [CommonModule, DragDropModule],
   template: `
-    <div class="relative w-full max-w-4xl mx-auto flex flex-col items-center justify-center px-2 py-1 select-none">
+    <div class="relative w-full flex items-center justify-center select-none py-1">
       
-      <!-- Circular Opponents Orbit (Shown in Clockwise order from player's POV) -->
-      <div class="w-full flex items-center justify-center gap-2 xs:gap-3 sm:gap-6 mb-2 sm:mb-4 overflow-x-auto py-1">
-        @for (player of opponents; track player.id; let idx = $index) {
-          <div class="flex items-center space-x-1.5 xs:space-x-2">
-            <app-player-panel [player]="player" />
-            @if (idx < opponents.length - 1) {
-              <span class="text-jungle-green/60 text-xs font-black hidden xs:inline animate-pulse">➔</span>
-            }
-          </div>
-        }
-      </div>
-
-      <!-- Main Jungle Game Board Table -->
+      <!-- Main Jungle Circular Table (Guaranteed Aspect-Square, True Circle, Never Squished) -->
       <div 
-        class="relative w-52 h-52 xs:w-60 xs:h-60 sm:w-76 sm:h-76 md:w-88 md:h-88 rounded-full bg-gradient-to-b from-[#D4E8C2] to-[#B8D79E] border-4 sm:border-8 border-jungle-green/40 shadow-xl flex flex-col items-center justify-center p-2 sm:p-4"
+        class="relative aspect-square w-48 xs:w-56 sm:w-64 md:w-72 rounded-full bg-gradient-to-b from-[#D8ECC6] to-[#B5D698] border-4 sm:border-6 border-jungle-green/40 shadow-xl flex items-center justify-center p-2 sm:p-3 flex-shrink-0"
       >
-        <!-- Botanical ring pattern inside table -->
+        <!-- Inner dashed decorative ring -->
         <div class="absolute inset-2 sm:inset-3 rounded-full border border-dashed border-jungle-green/30 pointer-events-none"></div>
 
-        <!-- Clockwise Animated SVG Arrows (No text, pure rotating directional arrows) -->
+        <!-- Clockwise Animated SVG Curved Arrows (Pure directional motion) -->
         <svg 
           viewBox="0 0 100 100" 
           class="absolute inset-0 w-full h-full pointer-events-none animate-spin" 
-          style="animation-duration: 20s;"
+          style="animation-duration: 22s;"
         >
-          <!-- Curved Clockwise Arrows around circle perimeter -->
           <defs>
-            <marker id="arrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <marker id="circleArrow" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
               <path d="M 0 1 L 10 5 L 0 9 z" fill="#D9A441" />
             </marker>
           </defs>
-          <!-- Arc 1 -->
-          <path d="M 50 8 A 42 42 0 0 1 92 50" fill="none" stroke="#D9A441" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#arrow)" opacity="0.85" />
-          <!-- Arc 2 -->
-          <path d="M 92 50 A 42 42 0 0 1 50 92" fill="none" stroke="#D9A441" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#arrow)" opacity="0.85" />
-          <!-- Arc 3 -->
-          <path d="M 50 92 A 42 42 0 0 1 8 50" fill="none" stroke="#D9A441" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#arrow)" opacity="0.85" />
-          <!-- Arc 4 -->
-          <path d="M 8 50 A 42 42 0 0 1 50 8" fill="none" stroke="#D9A441" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#arrow)" opacity="0.85" />
+          <path d="M 50 7 A 43 43 0 0 1 93 50" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-dasharray="5 3" marker-end="url(#circleArrow)" opacity="0.9" />
+          <path d="M 93 50 A 43 43 0 0 1 50 93" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-dasharray="5 3" marker-end="url(#circleArrow)" opacity="0.9" />
+          <path d="M 50 93 A 43 43 0 0 1 7 50" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-dasharray="5 3" marker-end="url(#circleArrow)" opacity="0.9" />
+          <path d="M 7 50 A 43 43 0 0 1 50 7" fill="none" stroke="#D9A441" stroke-width="2.5" stroke-dasharray="5 3" marker-end="url(#circleArrow)" opacity="0.9" />
         </svg>
 
-        <!-- Central Table Exchange Drop Zone -->
+        <!-- Central Table Exchange Drop Zone (Drop card here to pass) -->
         <div 
           cdkDropList
           id="table-exchange-dropzone"
+          [cdkDropListData]="[]"
           (cdkDropListDropped)="onDropCardOnTable($event)"
-          class="relative z-10 w-36 h-36 xs:w-42 xs:h-42 sm:w-52 sm:h-52 md:w-60 md:h-60 rounded-full bg-jungle-cream/95 backdrop-blur-md border-2 border-jungle-green/30 shadow-inner flex flex-col items-center justify-center p-2 xs:p-3 text-center transition-all duration-300"
+          class="relative z-10 aspect-square w-32 xs:w-38 sm:w-46 md:w-52 rounded-full bg-jungle-cream/95 backdrop-blur-md border-2 border-jungle-green/30 shadow-inner flex flex-col items-center justify-between p-2 sm:p-3 text-center transition-all duration-300 flex-shrink-0"
           [ngClass]="{
-            'border-jungle-gold ring-3 sm:ring-4 ring-jungle-gold/50 bg-jungle-cream shadow-gold-glow': isMyTurn,
+            'border-jungle-gold ring-4 ring-jungle-gold/60 bg-gradient-to-b from-[#FFFDF0] to-jungle-cream shadow-gold-glow scale-102': isMyTurn,
             'opacity-95': !isMyTurn
           }"
         >
-          <!-- Turn Timer in Center -->
-          <div class="flex items-center space-x-1 mb-0.5">
-            <span class="text-[11px] sm:text-xs">⏱️</span>
+          <!-- Turn Timer Header -->
+          <div class="flex items-center space-x-1 pt-1">
+            <span class="text-xs">⏱️</span>
             <span 
-              class="font-black text-xs xs:text-sm tracking-wider"
+              class="font-black text-xs sm:text-sm tracking-wider font-mono"
               [ngClass]="turnTimeRemaining <= 5 ? 'text-red-600 animate-ping' : 'text-jungle-dark'"
             >
               {{ turnTimeRemaining }}s
             </span>
           </div>
 
-          <!-- Turn Status Instruction -->
-          @if (isMyTurn) {
-            <div class="text-[10px] xs:text-xs font-black text-jungle-dark uppercase tracking-wide mb-1 xs:mb-1.5 animate-bounce">
-              ⚡ YOUR TURN ⚡
-            </div>
+          <!-- Central Action / Status Display -->
+          <div class="my-auto flex flex-col items-center justify-center w-full px-1">
+            @if (isMyTurn) {
+              @if (selectedCardId) {
+                <button 
+                  type="button"
+                  (click)="onExchangeClick()"
+                  class="w-full max-w-[125px] sm:max-w-[140px] py-1 sm:py-1.5 px-2 rounded-xl bg-jungle-green hover:bg-jungle-dark text-white font-black text-[10px] sm:text-xs shadow-md transition-all duration-200 cursor-pointer hover:scale-105 flex items-center justify-center space-x-1 animate-pulse"
+                >
+                  <span>🔄 Pass Card ➔</span>
+                </button>
+                <span class="text-[8px] sm:text-[9px] text-jungle-green font-bold mt-0.5">
+                  or drop here
+                </span>
+              } @else {
+                <div class="text-[10px] sm:text-xs font-black text-jungle-dark uppercase tracking-wide">
+                  Your Turn
+                </div>
+                <p class="text-[8px] sm:text-[9px] text-jungle-muted mt-0.5 leading-tight">
+                  Drag card or tap to pass ↻
+                </p>
+              }
+            } @else {
+              <div class="text-[10px] sm:text-xs font-bold text-jungle-dark uppercase tracking-wider truncate max-w-[120px] sm:max-w-[140px]">
+                {{ activeTurnPlayerName ? activeTurnPlayerName + "'s Turn" : 'Waiting...' }}
+              </div>
+              <div class="text-[8px] sm:text-[9px] text-jungle-muted mt-0.5">
+                Passing clockwise ↻
+              </div>
+            }
+          </div>
 
-            <!-- Exchange Card Button -->
+          <!-- Bottom Declare Winner Button -->
+          <div class="w-full pb-1 border-t border-jungle-green/10 flex justify-center">
             <button 
-              (click)="onExchangeClick()"
-              [disabled]="!selectedCardId"
-              class="w-full max-w-[130px] xs:max-w-[150px] py-1 xs:py-1.5 px-2 rounded-lg xs:rounded-xl font-bold text-[10px] xs:text-xs shadow-md transition-all duration-200 flex items-center justify-center space-x-1"
-              [ngClass]="selectedCardId 
-                ? 'bg-jungle-green hover:bg-jungle-dark text-white cursor-pointer hover:scale-105 shadow-jungle' 
-                : 'bg-jungle-surface/80 text-jungle-muted cursor-not-allowed'"
-            >
-              <span>🔄 Exchange Card</span>
-            </button>
-
-            <p class="text-[8px] xs:text-[9px] text-jungle-muted mt-0.5 xs:mt-1 truncate max-w-[140px]">
-              {{ selectedCardId ? 'Click button or drop card' : 'Select a card below to pass' }}
-            </p>
-          } @else {
-            <div class="text-[10px] xs:text-xs font-bold text-jungle-dark uppercase tracking-wider truncate max-w-[130px]">
-              {{ activeTurnPlayerName ? activeTurnPlayerName + "'s Turn" : 'Passing Cards...' }}
-            </div>
-            <div class="text-[8px] xs:text-[9px] text-jungle-muted mt-0.5">
-              Passing clockwise ↻
-            </div>
-          }
-
-          <!-- Declare Winner Button -->
-          <div class="mt-1 w-full pt-1 border-t border-jungle-green/10 flex justify-center">
-            <button 
+              type="button"
               (click)="onDeclareWinnerClick()"
-              class="w-full max-w-[130px] xs:max-w-[150px] py-1 px-1.5 rounded-lg xs:rounded-xl font-black text-[9px] xs:text-[11px] transition-all duration-200 flex items-center justify-center space-x-1 border shadow-xs"
+              class="w-full max-w-[125px] sm:max-w-[140px] py-0.5 sm:py-1 px-1 rounded-lg sm:rounded-xl font-black text-[8px] sm:text-[10px] transition-all duration-200 flex items-center justify-center space-x-1 cursor-pointer"
               [ngClass]="canDeclareWinner 
-                ? 'bg-jungle-gold hover:bg-amber-500 text-jungle-dark border-amber-300 animate-jungle-pulse cursor-pointer shadow-gold-glow' 
-                : 'bg-jungle-cream/50 text-jungle-muted/70 border-jungle-green/20 hover:text-jungle-dark cursor-pointer'"
+                ? 'bg-jungle-gold hover:bg-amber-500 text-jungle-dark border border-amber-400 animate-jungle-pulse shadow-gold-glow scale-105' 
+                : 'bg-jungle-surface/60 hover:bg-jungle-surface text-jungle-muted hover:text-jungle-dark border border-jungle-green/15'"
               title="Click if you have 4 matching cards!"
             >
               <span>🏆 DECLARE WINNER</span>
             </button>
           </div>
+
         </div>
 
       </div>
@@ -124,7 +111,6 @@ import { PlayerPanelComponent } from '../player-panel/player-panel.component';
   `,
 })
 export class GameTableComponent {
-  @Input() opponents: PublicPlayerInfo[] = [];
   @Input() isMyTurn = false;
   @Input() selectedCardId: string | null = null;
   @Input() turnTimeRemaining = 30;

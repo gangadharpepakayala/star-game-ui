@@ -78,6 +78,33 @@ export class GameService {
     return room.players.filter(p => p.id !== player.id);
   });
 
+  // All players ordered in clockwise rotation starting from the viewer
+  public orderedAllPlayers = computed(() => {
+    const room = this.currentRoom();
+    const player = this.currentPlayer();
+    if (!room) return [];
+    if (!player) return room.players;
+
+    const order = room.turnOrder && room.turnOrder.length > 0
+      ? room.turnOrder
+      : room.players.map(p => p.id);
+
+    const myIndex = order.indexOf(player.id);
+    if (myIndex === -1) {
+      return room.players;
+    }
+
+    const result: PublicPlayerInfo[] = [];
+    for (let i = 0; i < order.length; i++) {
+      const targetId = order[(myIndex + i) % order.length];
+      const found = room.players.find(p => p.id === targetId);
+      if (found) {
+        result.push(found);
+      }
+    }
+    return result;
+  });
+
   // Opponents ordered in clockwise rotation starting from the viewer's position
   public orderedOpponents = computed(() => {
     const room = this.currentRoom();
@@ -219,9 +246,9 @@ export class GameService {
       this.connectToRoom(res.roomId);
       this.toast.success(`Room "${data.roomName}" created!`);
       if (data.cardName && data.cardName.trim()) {
-        this.router.navigate(['/lobby', res.roomId]);
+        this.router.navigate(['/lobby', res.roomId], { replaceUrl: true });
       } else {
-        this.router.navigate(['/registration', res.roomId]);
+        this.router.navigate(['/registration', res.roomId], { replaceUrl: true });
       }
       return res.roomId;
     } catch (err: any) {
@@ -242,7 +269,7 @@ export class GameService {
       this.currentRoom.set(res.roomState);
       this.connectToRoom(res.roomId);
       this.toast.success(`Joined room "${res.roomName}"!`);
-      this.router.navigate(['/registration', res.roomId]);
+      this.router.navigate(['/registration', res.roomId], { replaceUrl: true });
       return res.roomId;
     } catch (err: any) {
       this.toast.error(err.error?.error || 'Failed to join room');
@@ -333,7 +360,7 @@ export class GameService {
     this.selectedCardId.set(null);
     this.isWinnerModalOpen.set(false);
     this.isChampionModalOpen.set(false);
-    this.router.navigate(['/']);
+    this.router.navigate(['/'], { replaceUrl: true });
   }
 
   /**

@@ -1,9 +1,11 @@
 import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ActivatedRoute, Router } from '@angular/router';
+import { DragDropModule } from '@angular/cdk/drag-drop';
 import { GameService } from '../../core/services/game.service';
 import { ToastService } from '../../core/services/toast.service';
 import { GameHeaderComponent } from '../../shared/components/game-header/game-header.component';
+import { PlayerCarouselComponent } from '../../shared/components/player-carousel/player-carousel.component';
 import { GameTableComponent } from '../../shared/components/game-table/game-table.component';
 import { CardHandComponent } from '../../shared/components/card-hand/card-hand.component';
 import { GameCardComponent } from '../../shared/components/game-card/game-card.component';
@@ -14,7 +16,9 @@ import { LeaderboardTableComponent } from '../../shared/components/leaderboard-t
   standalone: true,
   imports: [
     CommonModule,
+    DragDropModule,
     GameHeaderComponent,
+    PlayerCarouselComponent,
     GameTableComponent,
     CardHandComponent,
     GameCardComponent,
@@ -22,6 +26,7 @@ import { LeaderboardTableComponent } from '../../shared/components/leaderboard-t
   ],
   template: `
     <div class="h-[100dvh] max-h-[100dvh] jungle-pattern flex flex-col justify-between overflow-hidden select-none">
+      
       <!-- Top Game Header -->
       <app-game-header 
         [roomCode]="gameService.currentRoom()?.roomCode"
@@ -35,27 +40,24 @@ import { LeaderboardTableComponent } from '../../shared/components/leaderboard-t
         (endGame)="onEndGame()"
       />
 
-      <!-- Main Game Board Arena (Fits single mobile screen without scrolling) -->
-      <main class="flex-1 flex flex-col items-center justify-between px-2 py-1 max-w-6xl w-full mx-auto relative overflow-hidden">
+      <!-- Main Game Board Arena (Wrapped in cdkDropListGroup to connect hand to table dropzone) -->
+      <main 
+        cdkDropListGroup
+        class="flex-1 flex flex-col items-center justify-between px-2 py-1 max-w-5xl w-full mx-auto relative overflow-hidden"
+      >
         
-        <!-- Live Round & Turn Alert Banner -->
-        <div class="w-full text-center flex-shrink-0 pt-0.5">
-          @if (gameService.isMyTurn()) {
-            <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-jungle-gold text-jungle-dark font-black text-xs sm:text-sm shadow-md animate-bounce">
-              <span>⚡ YOUR TURN TO PASS A CARD (CLOCKWISE) ⚡</span>
-            </div>
-          } @else {
-            <div class="inline-flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-jungle-surface/70 text-jungle-dark font-semibold text-[11px] sm:text-xs">
-              <span class="animate-spin">🌿</span>
-              <span>Waiting for {{ activeTurnPlayerName() }} to pass a card...</span>
-            </div>
-          }
-        </div>
+        <!-- 1. TOP: Player Carousel (All players in clockwise POV, auto-slides to active turn) -->
+        <section class="w-full flex-shrink-0 pt-0.5">
+          <app-player-carousel 
+            [players]="gameService.orderedAllPlayers()"
+            [activePlayerId]="gameService.currentRoom()?.currentTurnPlayerId || null"
+            [currentPlayerId]="gameService.currentPlayer()?.id || null"
+          />
+        </section>
 
-        <!-- Central Jungle Table with Clockwise Circular Opponents -->
-        <div class="flex-1 flex items-center justify-center w-full min-h-0 py-0.5 sm:py-1">
+        <!-- 2. MIDDLE: Perfect Circle Jungle Table (Dropzone + Timer + Exchange + Declare) -->
+        <div class="flex-1 flex items-center justify-center w-full min-h-0 py-1">
           <app-game-table 
-            [opponents]="gameService.orderedOpponents()"
             [isMyTurn]="gameService.isMyTurn()"
             [selectedCardId]="gameService.selectedCardId()"
             [turnTimeRemaining]="gameService.turnTimeRemaining()"
@@ -66,11 +68,12 @@ import { LeaderboardTableComponent } from '../../shared/components/leaderboard-t
           />
         </div>
 
-        <!-- Current Player Interactive Hand at Bottom -->
+        <!-- 3. BOTTOM: Current Player 4-Card Hand -->
         <section class="w-full flex-shrink-0 bg-jungle-cream/90 backdrop-blur-md rounded-2xl sm:rounded-3xl border border-jungle-green/20 px-1 py-1 sm:px-3 sm:py-2 shadow-jungle">
           <app-card-hand 
             [cards]="gameService.privateHand()"
             [selectedCardId]="gameService.selectedCardId()"
+            [isMyTurn]="gameService.isMyTurn()"
             (cardSelected)="onCardSelected($event)"
             (cardExchanged)="onExchangeCard($event)"
           />

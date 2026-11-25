@@ -187,6 +187,16 @@ export class PlayerRegistrationComponent implements OnInit {
 
   public ngOnInit(): void {
     this.roomId = this.route.snapshot.paramMap.get('roomId') || '';
+    const room = this.gameService.currentRoom();
+    if (room?.roomStatus === 'COMPLETED' && this.roomId) {
+      this.router.navigate(['/champion', this.roomId], { replaceUrl: true });
+      return;
+    }
+    if (room?.roomStatus === 'IN_PROGRESS' && this.roomId) {
+      this.router.navigate(['/game', this.roomId], { replaceUrl: true });
+      return;
+    }
+
     const player = this.gameService.currentPlayer();
     if (player) {
       this.playerName = player.playerName;
@@ -274,7 +284,7 @@ export class PlayerRegistrationComponent implements OnInit {
 
       this.gameService.submitCard(this.cardName.trim(), this.cardImageUrl, finalPlayerName);
       this.toast.success(`Submitted "${this.cardName.trim()}" successfully!`);
-      this.router.navigate(['/lobby', this.roomId]);
+      this.router.navigate(['/lobby', this.roomId], { replaceUrl: true });
     } finally {
       this.isSubmitting = false;
     }

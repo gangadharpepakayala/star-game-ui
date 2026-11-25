@@ -1,6 +1,6 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
 import { GameService } from '../../core/services/game.service';
 import { PlayerAvatarComponent } from '../../shared/components/player-avatar/player-avatar.component';
 import { LeaderboardTableComponent } from '../../shared/components/leaderboard-table/leaderboard-table.component';
@@ -8,9 +8,9 @@ import { LeaderboardTableComponent } from '../../shared/components/leaderboard-t
 @Component({
   selector: 'app-final-champion',
   standalone: true,
-  imports: [CommonModule, RouterLink, PlayerAvatarComponent, LeaderboardTableComponent],
+  imports: [CommonModule, PlayerAvatarComponent, LeaderboardTableComponent],
   template: `
-    <div class="min-h-screen jungle-pattern flex flex-col justify-center items-center px-4 py-8">
+    <div class="min-h-screen jungle-pattern flex flex-col justify-center items-center px-4 py-8 select-none">
       <div class="max-w-2xl w-full bg-jungle-cream/95 backdrop-blur-md rounded-3xl p-6 sm:p-10 border-4 border-jungle-gold shadow-2xl text-center relative overflow-hidden">
         
         <!-- Trophy & Confetti Header -->
@@ -53,28 +53,42 @@ import { LeaderboardTableComponent } from '../../shared/components/leaderboard-t
         <div class="mt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
           @if (gameService.isHost()) {
             <button 
+              type="button"
               (click)="onPlayAgain()"
-              class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-jungle-green hover:bg-jungle-dark text-white font-black text-sm shadow-jungle hover:shadow-jungle-lg hover:scale-105 transition-all flex items-center justify-center space-x-2"
+              class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-jungle-green hover:bg-jungle-dark text-white font-black text-sm shadow-jungle hover:shadow-jungle-lg hover:scale-105 transition-all flex items-center justify-center space-x-2 cursor-pointer"
             >
               <span>🔄 Play Again (Same Players)</span>
             </button>
           }
 
-          <a 
-            routerLink="/"
-            class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-jungle-surface/60 hover:bg-jungle-surface text-jungle-dark font-bold text-sm transition-colors text-center"
+          <button 
+            type="button"
+            (click)="onReturnHome()"
+            class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-jungle-surface/60 hover:bg-jungle-surface text-jungle-dark font-bold text-sm transition-colors text-center cursor-pointer"
           >
             ← Return to Home
-          </a>
+          </button>
         </div>
 
       </div>
     </div>
   `,
 })
-export class FinalChampionComponent {
+export class FinalChampionComponent implements OnInit {
   public gameService = inject(GameService);
   private router = inject(Router);
+
+  public ngOnInit(): void {
+    // Trap browser back button on champion page so hitting back goes to Home instead of back to game board
+    if (typeof window !== 'undefined') {
+      history.pushState(null, '', window.location.href);
+    }
+  }
+
+  @HostListener('window:popstate')
+  public onPopState(): void {
+    this.router.navigate(['/'], { replaceUrl: true });
+  }
 
   public championName(): string {
     return this.gameService.gameCompleted()?.championPlayerName || 
@@ -95,6 +109,11 @@ export class FinalChampionComponent {
 
   public onPlayAgain(): void {
     this.gameService.requestNextRound();
-    this.router.navigate(['/lobby', this.gameService.currentRoom()?.roomId]);
+    this.router.navigate(['/lobby', this.gameService.currentRoom()?.roomId], { replaceUrl: true });
+  }
+
+  public onReturnHome(): void {
+    this.gameService.leaveRoom();
+    this.router.navigate(['/'], { replaceUrl: true });
   }
 }
