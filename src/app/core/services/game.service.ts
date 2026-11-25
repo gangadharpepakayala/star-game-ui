@@ -394,7 +394,6 @@ export class GameService {
       this.turnTimeRemaining.set(msg.payload.turnTimeSeconds || 30);
       if (msg.payload.playerId === this.currentPlayer()?.id) {
         this.audio.playTurnNotification();
-        this.toast.info('Your turn! Select a card to pass clockwise.', 'Your Turn');
       }
     });
 
@@ -448,7 +447,6 @@ export class GameService {
     this.ws.onEvent('next_round_started').subscribe((msg) => {
       this.roundCountdown.set(0);
       this.isWinnerModalOpen.set(false);
-      this.toast.info(`Round ${msg.payload.roundNumber} has started! Deal in progress...`);
     });
 
     // Game started

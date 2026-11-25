@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter, ElementRef, ViewChild, OnChanges, SimpleChanges, AfterViewInit } from '@angular/core';
+import { Component, Input, ElementRef, ViewChild, OnChanges, SimpleChanges, AfterViewInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PublicPlayerInfo } from '../../../core/models/game.models';
 import { PlayerAvatarComponent } from '../player-avatar/player-avatar.component';
@@ -9,25 +9,24 @@ import { CardBackComponent } from '../card-back/card-back.component';
   standalone: true,
   imports: [CommonModule, PlayerAvatarComponent, CardBackComponent],
   template: `
-    <div class="relative w-full max-w-4xl mx-auto px-1 sm:px-6 select-none">
+    <div class="relative w-full max-w-5xl mx-auto px-1 sm:px-4 select-none">
       
       <!-- Left Scroll Arrow (Desktop / Wide screen) -->
       @if (players.length > 3) {
         <button 
           (click)="scrollPrev()" 
           type="button"
-          class="hidden sm:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-jungle-cream/90 hover:bg-white text-jungle-dark shadow-md border border-jungle-green/20 items-center justify-center text-sm font-bold transition-all hover:scale-110 cursor-pointer"
+          class="hidden sm:flex absolute left-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-jungle-cream/95 hover:bg-white text-jungle-dark shadow-md border border-jungle-green/20 items-center justify-center text-sm font-bold transition-all hover:scale-110 cursor-pointer"
           title="Scroll Left"
         >
           ‹
         </button>
       }
 
-      <!-- Horizontal Carousel Track (Swipeable, No Scrollbar, Snap Center) -->
+      <!-- Horizontal Carousel Track (Swipeable, No Scrollbar, Snap Center, Never Clips First Card) -->
       <div 
         #carouselTrack
-        class="flex items-center gap-2.5 sm:gap-4 overflow-x-auto py-2 px-4 sm:px-8 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-        [ngClass]="players.length <= 4 ? 'justify-center' : 'justify-start'"
+        class="flex items-center gap-2.5 sm:gap-4 overflow-x-auto py-2.5 px-6 sm:px-12 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-px-6 sm:scroll-px-12"
       >
         @for (player of players; track player.id) {
           <div 
@@ -104,7 +103,7 @@ import { CardBackComponent } from '../card-back/card-back.component';
         <button 
           (click)="scrollNext()" 
           type="button"
-          class="hidden sm:flex absolute right-0 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-jungle-cream/90 hover:bg-white text-jungle-dark shadow-md border border-jungle-green/20 items-center justify-center text-sm font-bold transition-all hover:scale-110 cursor-pointer"
+          class="hidden sm:flex absolute right-1 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-jungle-cream/95 hover:bg-white text-jungle-dark shadow-md border border-jungle-green/20 items-center justify-center text-sm font-bold transition-all hover:scale-110 cursor-pointer"
           title="Scroll Right"
         >
           ›
@@ -128,7 +127,6 @@ export class PlayerCarouselComponent implements OnChanges, AfterViewInit {
   }
 
   public ngAfterViewInit(): void {
-    // Initial scroll to active player
     setTimeout(() => this.scrollToActivePlayer(), 300);
   }
 
