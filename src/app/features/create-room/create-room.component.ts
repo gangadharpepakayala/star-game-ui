@@ -179,10 +179,9 @@ import { PREDEFINED_CARD_SYMBOLS, getRandomCardSymbol, CardSymbol } from '../../
                     [(ngModel)]="totalRounds"
                     class="w-full px-3 py-2.5 rounded-xl bg-white border border-jungle-green/30 text-jungle-dark font-bold text-sm focus:outline-none focus:ring-2 focus:ring-jungle-green"
                   >
-                    <option [value]="1">1 Round</option>
-                    <option [value]="3">3 Rounds</option>
-                    <option [value]="5">5 Rounds</option>
-                    <option [value]="7">7 Rounds</option>
+                    @for (r of roundOptions; track r) {
+                      <option [value]="r">{{ r }} Rounds</option>
+                    }
                   </select>
                 </div>
               </div>
@@ -255,6 +254,7 @@ export class CreateRoomComponent implements OnInit {
   public maxPlayers = 4;
   public totalRounds = 5;
   public playerOptions = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+  public roundOptions = [1, 3, 5, 10, 15, 20];
   public isPrivate = false;
   public password = '';
   public isSubmitting = false;

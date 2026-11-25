@@ -1,7 +1,7 @@
 import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PhysicalCard } from '../../../core/models/game.models';
-import { getCardEmoji } from '../../../core/models/card-symbols';
+import { getCardEmoji, getCardRealImage } from '../../../core/models/card-symbols';
 
 @Component({
   selector: 'app-game-card',
@@ -21,7 +21,7 @@ import { getCardEmoji } from '../../../core/models/card-symbols';
     >
       <!-- Top header with mini badge & title -->
       <div 
-        class="flex items-center justify-between z-10 px-1 py-0.5 sm:px-2 sm:py-1"
+        class="flex items-center justify-between z-10 px-1 py-0.5 sm:px-2 sm:py-1 bg-white/40"
       >
         <span 
           class="font-black tracking-wider text-jungle-green uppercase truncate text-[8px] xs:text-[9px] sm:text-[10px]"
@@ -33,26 +33,23 @@ import { getCardEmoji } from '../../../core/models/card-symbols';
         }
       </div>
 
-      <!-- Center artwork: custom image or botanical jungle glyph -->
-      <div class="flex-1 flex flex-col items-center justify-center p-0.5 sm:p-1 relative">
-        @if (card.cardImageUrl) {
+      <!-- Center artwork: Real wildlife / nature photography (no circle, full rectangular view) -->
+      <div class="flex-1 w-full p-0.5 sm:p-1 relative overflow-hidden flex items-center justify-center min-h-0 bg-jungle-surface/10">
+        @if (getCardImageUrl()) {
           <img 
-            [src]="card.cardImageUrl" 
+            [src]="getCardImageUrl()" 
             [alt]="card.cardName" 
-            class="object-contain rounded drop-shadow-sm transition-transform group-hover:scale-105 max-h-[44px] max-w-[44px] sm:max-h-[64px] sm:max-w-[64px]"
+            loading="lazy"
+            class="w-full h-full object-cover rounded-md sm:rounded-lg shadow-inner transition-transform group-hover:scale-105"
+            (error)="imgFailed = true"
           />
         } @else {
-          <!-- Predefined Jungle / Nature Adventure Glyph -->
           <div 
-            class="rounded-full bg-jungle-surface/50 border border-jungle-green/20 flex items-center justify-center shadow-inner w-9 h-9 xs:w-10 xs:h-10 sm:w-14 sm:h-14 text-lg xs:text-xl sm:text-2xl"
+            class="w-full h-full bg-jungle-surface/60 rounded-md sm:rounded-lg border border-jungle-green/20 flex items-center justify-center text-xl xs:text-2xl sm:text-3xl shadow-inner font-bold text-jungle-dark"
           >
             {{ getJungleEmoji(card.cardName) }}
           </div>
         }
-
-        <!-- Subtle corner leaf flourishes -->
-        <span class="absolute top-0 right-0.5 text-[8px] sm:text-[10px] text-jungle-green/30 pointer-events-none">🌿</span>
-        <span class="absolute bottom-0 left-0.5 text-[8px] sm:text-[10px] text-jungle-green/30 pointer-events-none">🍃</span>
       </div>
 
       <!-- Card name banner at bottom -->
@@ -74,8 +71,16 @@ export class GameCardComponent {
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
   @Output() cardSelected = new EventEmitter<string>();
 
+  public imgFailed = false;
+
   public onClick(): void {
     this.cardSelected.emit(this.card.id);
+  }
+
+  public getCardImageUrl(): string | undefined {
+    if (this.imgFailed) return undefined;
+    if (this.card.cardImageUrl) return this.card.cardImageUrl;
+    return getCardRealImage(this.card.cardName);
   }
 
   public getJungleEmoji(name?: string): string {

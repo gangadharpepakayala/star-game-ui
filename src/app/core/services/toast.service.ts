@@ -8,16 +8,7 @@ export class ToastService {
   public toasts = signal<ToastMessage[]>([]);
 
   public show(message: string, type: 'success' | 'error' | 'info' | 'warning' = 'info', title?: string, duration = 3500): void {
-    const id = Math.random().toString(36).substring(2, 9);
-    const toast: ToastMessage = { id, message, type, title, duration };
-
-    this.toasts.update(current => [...current, toast]);
-
-    if (duration > 0) {
-      setTimeout(() => {
-        this.dismiss(id);
-      }, duration);
-    }
+    // All toast snackbar notifications completely disabled per user preference
   }
 
   public success(message: string, title?: string): void {

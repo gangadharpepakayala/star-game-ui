@@ -2,12 +2,11 @@ import { Component, Input, ElementRef, ViewChild, OnChanges, SimpleChanges, Afte
 import { CommonModule } from '@angular/common';
 import { PublicPlayerInfo } from '../../../core/models/game.models';
 import { PlayerAvatarComponent } from '../player-avatar/player-avatar.component';
-import { CardBackComponent } from '../card-back/card-back.component';
 
 @Component({
   selector: 'app-player-carousel',
   standalone: true,
-  imports: [CommonModule, PlayerAvatarComponent, CardBackComponent],
+  imports: [CommonModule, PlayerAvatarComponent],
   template: `
     <div class="relative w-full max-w-5xl mx-auto px-1 sm:px-4 select-none">
       
@@ -23,10 +22,11 @@ import { CardBackComponent } from '../card-back/card-back.component';
         </button>
       }
 
-      <!-- Horizontal Carousel Track (Swipeable, No Scrollbar, Snap Center, Never Clips First Card) -->
+      <!-- Horizontal Carousel Track (Swipeable, No Scrollbar, Smooth Snap, Never Clips Cards) -->
       <div 
         #carouselTrack
-        class="flex items-center gap-2.5 sm:gap-4 overflow-x-auto py-2.5 px-6 sm:px-12 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-px-6 sm:scroll-px-12"
+        class="flex items-center gap-2 sm:gap-3.5 overflow-x-auto py-2 px-3 sm:px-8 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none] scroll-px-3 sm:scroll-px-8"
+        [ngClass]="players.length <= 3 ? 'justify-center' : 'justify-start'"
       >
         @for (player of players; track player.id) {
           <div 
@@ -39,7 +39,7 @@ import { CardBackComponent } from '../card-back/card-back.component';
           >
             <!-- Player Card -->
             <div 
-              class="flex flex-col items-center p-2 sm:p-2.5 rounded-2xl backdrop-blur-md border shadow-md transition-all duration-300 w-[105px] xs:w-[115px] sm:w-[135px]"
+              class="flex flex-col items-center p-2 sm:p-2.5 rounded-2xl backdrop-blur-md border shadow-md transition-all duration-300 w-[96px] xs:w-[106px] sm:w-[126px]"
               [ngClass]="{
                 'border-jungle-gold ring-3 ring-jungle-gold/80 shadow-gold-glow bg-gradient-to-b from-[#FFFDF2] to-[#F5EED0]': player.id === activePlayerId,
                 'border-jungle-green/25 bg-jungle-cream/90 hover:border-jungle-green/50': player.id !== activePlayerId,
@@ -85,11 +85,14 @@ import { CardBackComponent } from '../card-back/card-back.component';
                 <span>🏆 {{ player.roundWins }}</span>
               </div>
 
-              <!-- Card Backs / Count (4 cards) -->
-              <div class="flex items-center justify-center space-x-0.5 mt-1.5">
+              <!-- Card Backs / Count (4 cards) - Compact neatly fanned mini cards -->
+              <div class="flex items-center justify-center -space-x-1.5 mt-1.5 py-0.5">
                 @for (i of getCardSlots(player.cardCount); track i) {
-                  <div class="scale-75 sm:scale-85 origin-center">
-                    <app-card-back size="sm" />
+                  <div 
+                    class="w-4 h-6 xs:w-4.5 xs:h-6.5 sm:w-5 sm:h-7 rounded-sm bg-gradient-to-br from-[#1E3F20] to-[#122613] border border-jungle-gold/50 shadow-xs flex items-center justify-center transition-transform hover:-translate-y-0.5"
+                    title="Hidden Card"
+                  >
+                    <span class="text-[7px] xs:text-[8px] text-jungle-gold font-bold">✦</span>
                   </div>
                 }
               </div>
