@@ -1,4 +1,4 @@
-import { Component, Input, Output, EventEmitter } from '@angular/core';
+import { Component, Input, Output, EventEmitter, OnChanges, SimpleChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { PhysicalCard } from '../../../core/models/game.models';
 import { getCardEmoji, getCardRealImage } from '../../../core/models/card-symbols';
@@ -40,6 +40,7 @@ import { getCardEmoji, getCardRealImage } from '../../../core/models/card-symbol
             [src]="getCardImageUrl()" 
             [alt]="card.cardName" 
             loading="lazy"
+            referrerpolicy="no-referrer"
             class="w-full h-full object-cover rounded-md sm:rounded-lg shadow-inner transition-transform group-hover:scale-105"
             (error)="imgFailed = true"
           />
@@ -65,13 +66,19 @@ import { getCardEmoji, getCardRealImage } from '../../../core/models/card-symbol
     </div>
   `,
 })
-export class GameCardComponent {
+export class GameCardComponent implements OnChanges {
   @Input({ required: true }) card!: PhysicalCard;
   @Input() isSelected = false;
   @Input() size: 'sm' | 'md' | 'lg' = 'md';
   @Output() cardSelected = new EventEmitter<string>();
 
   public imgFailed = false;
+
+  public ngOnChanges(changes: SimpleChanges): void {
+    if (changes['card']) {
+      this.imgFailed = false;
+    }
+  }
 
   public onClick(): void {
     this.cardSelected.emit(this.card.id);
