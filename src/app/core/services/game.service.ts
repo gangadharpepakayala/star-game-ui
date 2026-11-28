@@ -61,6 +61,7 @@ export class GameService {
     const room = this.currentRoom();
     const player = this.currentPlayer();
     if (!room || !player) return false;
+    if (room.isPaused) return false;
     return room.currentTurnPlayerId === player.id;
   });
 
@@ -133,6 +134,8 @@ export class GameService {
   });
 
   public canDeclareWinner = computed(() => {
+    const room = this.currentRoom();
+    if (room?.isPaused) return false;
     const hand = this.privateHand();
     if (hand.length !== 4) return false;
     const firstType = hand[0].cardTypeId;
@@ -343,6 +346,18 @@ export class GameService {
     this.ws.send('request_next_round', room.roomId, {});
   }
 
+  public pauseGame(): void {
+    const room = this.currentRoom();
+    if (!room) return;
+    this.ws.send('pause_game', room.roomId, {});
+  }
+
+  public resumeGame(): void {
+    const room = this.currentRoom();
+    if (!room) return;
+    this.ws.send('resume_game', room.roomId, {});
+  }
+
   public endGame(): void {
     const room = this.currentRoom();
     if (!room) return;
@@ -453,6 +468,16 @@ export class GameService {
     this.ws.onEvent('game_started').subscribe((msg) => {
       this.roundCountdown.set(0);
       this.isWinnerModalOpen.set(false);
+    });
+
+    // Game paused by host
+    this.ws.onEvent('game_paused').subscribe((msg) => {
+      this.currentRoom.update(r => r ? { ...r, isPaused: true, pausedByPlayerName: msg.payload?.pausedBy } : null);
+    });
+
+    // Game resumed by host
+    this.ws.onEvent('game_resumed').subscribe(() => {
+      this.currentRoom.update(r => r ? { ...r, isPaused: false, pausedByPlayerName: undefined } : null);
     });
 
     // Game completed (Final Champion)

@@ -36,8 +36,12 @@ import { LeaderboardTableComponent } from '../../shared/components/leaderboard-t
         [showLeaveButton]="true"
         [isHost]="gameService.isHost()"
         [showEndGameButton]="true"
+        [showPauseButton]="true"
+        [isPaused]="gameService.currentRoom()?.isPaused || false"
         (leave)="onLeaveRoom()"
         (endGame)="onEndGame()"
+        (pauseGame)="onPauseGame()"
+        (resumeGame)="onResumeGame()"
       />
 
       <!-- Main Game Board Arena (Wrapped in cdkDropListGroup to connect hand to table dropzone) -->
@@ -80,6 +84,60 @@ import { LeaderboardTableComponent } from '../../shared/components/leaderboard-t
         </section>
 
       </main>
+
+      <!-- Fullscreen Game Paused Overlay for All Players -->
+      @if (gameService.currentRoom()?.isPaused) {
+        <div class="fixed inset-0 z-40 flex items-center justify-center bg-black/75 backdrop-blur-md p-4 animate-fade-in select-none">
+          <div class="max-w-md w-full bg-jungle-cream rounded-3xl p-6 sm:p-8 border-4 border-jungle-gold shadow-2xl text-center space-y-4">
+            
+            <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto rounded-full bg-jungle-gold/20 flex items-center justify-center text-3xl sm:text-4xl shadow-inner animate-pulse">
+              ⏸️
+            </div>
+
+            <div class="space-y-1">
+              <span class="text-[10px] sm:text-xs font-black uppercase tracking-widest text-jungle-gold">
+                Arena Paused
+              </span>
+              <h2 class="text-2xl sm:text-3xl font-black text-jungle-dark tracking-wide">
+                GAME PAUSED
+              </h2>
+            </div>
+
+            <p class="text-xs sm:text-sm text-jungle-muted px-2">
+              @if (gameService.isHost()) {
+                You have paused the game. Turn timers and card exchanges are frozen for everyone.
+              } @else {
+                The game has been paused by the host (<strong class="text-jungle-dark font-bold">{{ gameService.currentRoom()?.pausedByPlayerName || 'Admin' }}</strong>). Please wait for the host to resume.
+              }
+            </p>
+
+            <!-- Frozen Turn Timer Badge -->
+            <div class="py-2 px-4 rounded-2xl bg-jungle-surface/60 border border-jungle-green/20 inline-flex items-center space-x-2 text-xs font-bold text-jungle-dark">
+              <span>⏳</span>
+              <span>Timer frozen at {{ gameService.turnTimeRemaining() }}s</span>
+            </div>
+
+            <!-- Host Resume Action vs Player Waiting -->
+            <div class="pt-2">
+              @if (gameService.isHost()) {
+                <button 
+                  (click)="onResumeGame()"
+                  class="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-jungle-green hover:from-emerald-500 hover:to-jungle-dark text-white font-black text-sm shadow-jungle hover:shadow-jungle-lg transition-all cursor-pointer flex items-center justify-center space-x-2"
+                >
+                  <span>▶️</span>
+                  <span>RESUME GAME FOR ALL PLAYERS</span>
+                </button>
+              } @else {
+                <div class="py-2 text-xs font-bold text-jungle-green flex items-center justify-center space-x-2">
+                  <span class="inline-block w-2.5 h-2.5 rounded-full bg-jungle-gold animate-ping"></span>
+                  <span>Waiting for admin to resume...</span>
+                </div>
+              }
+            </div>
+
+          </div>
+        </div>
+      }
 
       <!-- 3-Second Countdown Overlay Before Next Round -->
       @if (gameService.roundCountdown() > 0) {
@@ -258,6 +316,14 @@ export class GameBoardComponent implements OnInit {
 
   public onLeaveRoom(): void {
     this.gameService.leaveRoom();
+  }
+
+  public onPauseGame(): void {
+    this.gameService.pauseGame();
+  }
+
+  public onResumeGame(): void {
+    this.gameService.resumeGame();
   }
 
   public onEndGame(): void {

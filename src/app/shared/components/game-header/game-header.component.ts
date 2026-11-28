@@ -64,6 +64,29 @@ import { PlayerProfile } from '../../../core/models/game.models';
             {{ audio.isMuted() ? '🔇' : '🔊' }}
           </button>
 
+          <!-- Admin "Pause / Resume Game" Option -->
+          @if (isHost && showPauseButton) {
+            @if (isPaused) {
+              <button 
+                (click)="showResumeConfirm.set(true)"
+                class="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] sm:text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center space-x-1 animate-pulse"
+                title="Resume game"
+              >
+                <span>▶️</span>
+                <span class="hidden sm:inline">Resume</span>
+              </button>
+            } @else {
+              <button 
+                (click)="showPauseConfirm.set(true)"
+                class="px-2 py-1 sm:px-2.5 sm:py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-[10px] sm:text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center space-x-1"
+                title="Pause game"
+              >
+                <span>⏸️</span>
+                <span class="hidden sm:inline">Pause</span>
+              </button>
+            }
+          }
+
           <!-- Admin "End Game" Option -->
           @if (isHost && showEndGameButton) {
             <button 
@@ -117,6 +140,60 @@ import { PlayerProfile } from '../../../core/models/game.models';
       </div>
     }
 
+    <!-- Confirm Pause Game Modal (Host only) -->
+    @if (showPauseConfirm()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+        <div class="max-w-sm w-full bg-jungle-cream rounded-3xl p-5 border-2 border-blue-400 shadow-xl text-center space-y-4">
+          <div class="text-3xl">⏸️</div>
+          <h3 class="text-lg font-black text-jungle-dark">Pause Game?</h3>
+          <p class="text-xs text-jungle-muted">
+            Are you sure you want to pause? The turn timers and card exchanges will freeze for all players until you resume.
+          </p>
+          <div class="flex items-center justify-center gap-3 pt-2">
+            <button 
+              (click)="showPauseConfirm.set(false)"
+              class="flex-1 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button 
+              (click)="confirmPauseGame()"
+              class="flex-1 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-colors cursor-pointer"
+            >
+              Yes, Pause Game
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Confirm Resume Game Modal (Host only) -->
+    @if (showResumeConfirm()) {
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
+        <div class="max-w-sm w-full bg-jungle-cream rounded-3xl p-5 border-2 border-emerald-400 shadow-xl text-center space-y-4">
+          <div class="text-3xl">▶️</div>
+          <h3 class="text-lg font-black text-jungle-dark">Resume Game?</h3>
+          <p class="text-xs text-jungle-muted">
+            Are you sure you want to resume? Turn countdowns and gameplay will continue immediately for all players.
+          </p>
+          <div class="flex items-center justify-center gap-3 pt-2">
+            <button 
+              (click)="showResumeConfirm.set(false)"
+              class="flex-1 py-2 rounded-xl bg-gray-200 hover:bg-gray-300 text-gray-800 text-xs font-bold transition-colors cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button 
+              (click)="confirmResumeGame()"
+              class="flex-1 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer"
+            >
+              Yes, Resume Game
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+
     <!-- Confirm End Game Modal (Host only) -->
     @if (showEndGameConfirm()) {
       <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-fade-in">
@@ -153,12 +230,18 @@ export class GameHeaderComponent {
   @Input() showLeaveButton = false;
   @Input() isHost = false;
   @Input() showEndGameButton = true;
+  @Input() showPauseButton = true;
+  @Input() isPaused = false;
 
   @Output() leave = new EventEmitter<void>();
   @Output() endGame = new EventEmitter<void>();
+  @Output() pauseGame = new EventEmitter<void>();
+  @Output() resumeGame = new EventEmitter<void>();
 
   public showLeaveConfirm = signal<boolean>(false);
   public showEndGameConfirm = signal<boolean>(false);
+  public showPauseConfirm = signal<boolean>(false);
+  public showResumeConfirm = signal<boolean>(false);
 
   public audio = inject(AudioService);
   private toast = inject(ToastService);
@@ -181,6 +264,16 @@ export class GameHeaderComponent {
       localStorage.setItem('star_game_last_room', this.roomCode);
     }
     this.leave.emit();
+  }
+
+  public confirmPauseGame(): void {
+    this.showPauseConfirm.set(false);
+    this.pauseGame.emit();
+  }
+
+  public confirmResumeGame(): void {
+    this.showResumeConfirm.set(false);
+    this.resumeGame.emit();
   }
 
   public confirmEndGame(): void {
